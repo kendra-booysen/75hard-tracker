@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>75 Hard Tracker</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Share Tech Mono', monospace;
+      overflow: hidden;
+      transition: background 0.3s;
+    }
+
+    body.dark  { background: #111; }
+    body.light { background: #f5f0e8; }
+
+    #scaler {
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      transform-origin: center center;
+      position: relative;
+      padding: 2rem 1rem 1.5rem;
+    }
+
+    /* DARK theme */
+    body.dark .setup-title   { color: #555; }
+    body.dark .setup-heading { color: #f0e6d3; }
+    body.dark .setup-sub     { color: #444; }
+    body.dark .date-input    { background: #1a1a1a; border-color: #333; color: #f0e6d3; }
+    body.dark .date-input:focus { border-color: #555; }
+    body.dark .start-btn     { border-color: #333; color: #555; }
+    body.dark .start-btn:hover { border-color: #c8aa78; color: #c8aa78; }
+    body.dark .ring-bg       { stroke: #1e1e1e; }
+    body.dark .ring-fill     { stroke: #c8aa78; }
+    body.dark .day-label     { color: #444; }
+    body.dark .day-number    { color: #f0e6d3; }
+    body.dark .day-of        { color: #444; }
+    body.dark .stat-val      { color: #f0e6d3; }
+    body.dark .stat-label    { color: #444; }
+    body.dark .divider       { background: #222; }
+    body.dark .message       { color: #555; }
+    body.dark .reset-btn     { border-color: #222; color: #333; }
+    body.dark .reset-btn:hover { border-color: #444; color: #555; }
+    body.dark .theme-btn     { border-color: #2a2a2a; color: #444; background: #1a1a1a; }
+    body.dark .theme-btn:hover { color: #888; }
+
+    /* LIGHT theme */
+    body.light .setup-title   { color: #aaa; }
+    body.light .setup-heading { color: #1a1a1a; }
+    body.light .setup-sub     { color: #bbb; }
+    body.light .date-input    { background: #fff; border-color: #ddd; color: #1a1a1a; }
+    body.light .date-input:focus { border-color: #aaa; }
+    body.light .start-btn     { border-color: #ccc; color: #aaa; }
+    body.light .start-btn:hover { border-color: #9a7c4f; color: #9a7c4f; }
+    body.light .ring-bg       { stroke: #e0d8cc; }
+    body.light .ring-fill     { stroke: #9a7c4f; }
+    body.light .day-label     { color: #bbb; }
+    body.light .day-number    { color: #1a1a1a; }
+    body.light .day-of        { color: #bbb; }
+    body.light .stat-val      { color: #1a1a1a; }
+    body.light .stat-label    { color: #bbb; }
+    body.light .divider       { background: #ddd; }
+    body.light .message       { color: #aaa; }
+    body.light .reset-btn     { border-color: #ddd; color: #ccc; }
+    body.light .reset-btn:hover { border-color: #bbb; color: #aaa; }
+    body.light .theme-btn     { border-color: #ddd; color: #bbb; background: #fff; }
+    body.light .theme-btn:hover { color: #888; }
+
+    .theme-btn {
+      position: absolute; top: 14px; right: 14px;
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 10px; padding: 4px 10px;
+      border-radius: 20px; border: 1px solid;
+      cursor: pointer; letter-spacing: 0.1em;
+      text-transform: uppercase; transition: all 0.2s;
+    }
+
+    .setup {
+      display: flex; flex-direction: column;
+      align-items: center; gap: 16px; text-align: center;
+    }
+    .setup-title   { font-size: 11px; letter-spacing: 0.25em; text-transform: uppercase; }
+    .setup-heading { font-size: 22px; letter-spacing: 0.05em; }
+    .setup-sub     { font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase; }
+
+    .date-input {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 14px; padding: 10px 20px;
+      border-radius: 8px; border: 1px solid;
+      text-align: center; outline: none;
+      letter-spacing: 0.05em; cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .start-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 11px; padding: 8px 28px;
+      border-radius: 20px; border: 1px solid;
+      background: transparent; cursor: pointer;
+      letter-spacing: 0.2em; text-transform: uppercase;
+      transition: all 0.2s;
+    }
+
+    .main { display: flex; flex-direction: column; align-items: center; gap: 20px; }
+
+    .ring-wrap { position: relative; width: 220px; height: 220px; }
+    svg.ring   { width: 220px; height: 220px; transform: rotate(-90deg); }
+    .ring-bg   { fill: none; stroke-width: 12; }
+    .ring-fill { fill: none; stroke-width: 12; stroke-linecap: round; transition: stroke-dashoffset 1.2s cubic-bezier(0.4,0,0.2,1), stroke 0.3s; }
+
+    .ring-center {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 2px;
+    }
+    .day-label  { font-size: 10px; letter-spacing: 0.25em; text-transform: uppercase; }
+    .day-number { font-size: 64px; line-height: 1; letter-spacing: -2px; }
+    .day-of     { font-size: 10px; letter-spacing: 0.2em; }
+
+    .status-row { display: flex; gap: 24px; }
+    .stat { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .stat-val   { font-size: 22px; letter-spacing: -1px; }
+    .stat-label { font-size: 9px; letter-spacing: 0.2em; text-transform: uppercase; }
+    .divider    { width: 1px; height: 36px; align-self: center; }
+
+    .message { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; text-align: center; }
+
+    .reset-btn {
+      font-family: 'Share Tech Mono', monospace;
+      font-size: 9px; padding: 4px 14px;
+      border-radius: 20px; border: 1px solid;
+      background: transparent; cursor: pointer;
+      letter-spacing: 0.15em; text-transform: uppercase;
+      transition: all 0.2s; margin-top: 4px;
+    }
+  </style>
+</head>
+<body class="dark">
+
+  <div id="scaler">
+    <button class="theme-btn" id="theme-btn">☀ light</button>
+    <div id="app"></div>
+  </div>
+
+  <script>
+    const STORAGE_KEY = '75hard_start_date';
+    const THEME_KEY   = '75hard_theme';
+    const TOTAL = 75;
+    let currentTheme = 'dark';
+
+    function getStart() { try { return localStorage.getItem(STORAGE_KEY)||null; } catch(e){return null;} }
+    function saveStart(d){ try { localStorage.setItem(STORAGE_KEY,d); } catch(e){} }
+    function clearStart(){ try { localStorage.removeItem(STORAGE_KEY); } catch(e){} }
+    function getTheme()  { try { return localStorage.getItem(THEME_KEY)||'dark'; } catch(e){return 'dark';} }
+    function saveTheme(t){ try { localStorage.setItem(THEME_KEY,t); } catch(e){} }
+
+    function applyTheme(t) {
+      currentTheme = t;
+      document.body.classList.remove('dark','light');
+      document.body.classList.add(t);
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.textContent = t === 'dark' ? '☀ light' : '☾ dark';
+      saveTheme(t);
+    }
+
+    function daysSince(dateStr) {
+      const start = new Date(dateStr); start.setHours(0,0,0,0);
+      const now = new Date(); now.setHours(0,0,0,0);
+      return Math.floor((now - start)/86400000) + 1;
+    }
+
+    function getMessage(day) {
+      if (day <= 0) return 'challenge not started yet';
+      if (day === 1) return 'day one. no excuses.';
+      if (day <= 7) return 'stay the course.';
+      if (day <= 14) return 'building momentum.';
+      if (day <= 30) return 'discipline is freedom.';
+      if (day <= 50) return 'past the halfway point.';
+      if (day <= 74) return 'the finish line is close.';
+      if (day === 75) return 'you did it. 75 hard complete.';
+      return 'challenge complete.';
+    }
+
+    function attachThemeBtn() {
+      const btn = document.getElementById('theme-btn');
+      if (btn) btn.onclick = () => applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
+    }
+
+    function renderSetup() {
+      document.getElementById('app').innerHTML = `
+        <div class="setup">
+          <div class="setup-title">75 hard challenge</div>
+          <div class="setup-heading">when did you start?</div>
+          <div class="setup-sub">enter your start date below</div>
+          <input type="date" class="date-input" id="date-pick" />
+          <button class="start-btn" id="start-btn">begin tracking</button>
+        </div>`;
+
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date-pick').value = today;
+      document.getElementById('date-pick').max = today;
+      document.getElementById('start-btn').onclick = () => {
+        const val = document.getElementById('date-pick').value;
+        if (!val) return;
+        saveStart(val);
+        renderMain(val);
+        rescale();
+      };
+      attachThemeBtn();
+    }
+
+    function renderMain(startDate) {
+      const day = daysSince(startDate);
+      const clamped   = Math.max(1, Math.min(day, TOTAL));
+      const display   = day <= 0 ? 0 : clamped;
+      const remaining = Math.max(0, TOTAL - day + 1);
+      const pct       = Math.min(display / TOTAL, 1);
+      const R = 96;
+      const C = +(2 * Math.PI * R).toFixed(2);
+      const offset = +(C * (1 - pct)).toFixed(2);
+      const completed = day <= 0 ? 0 : day <= TOTAL ? day - 1 : TOTAL;
+
+      document.getElementById('app').innerHTML = `
+        <div class="main">
+          <div class="ring-wrap">
+            <svg class="ring" viewBox="0 0 220 220" xmlns="http://www.w3.org/2000/svg">
+              <circle class="ring-bg" cx="110" cy="110" r="${R}"/>
+              <circle class="ring-fill" cx="110" cy="110" r="${R}"
+                stroke-dasharray="${C}" stroke-dashoffset="${C}" id="ring-arc"/>
+            </svg>
+            <div class="ring-center">
+              <div class="day-label">day</div>
+              <div class="day-number">${display}</div>
+              <div class="day-of">of ${TOTAL}</div>
+            </div>
+          </div>
+          <div class="status-row">
+            <div class="stat"><div class="stat-val">${completed}</div><div class="stat-label">completed</div></div>
+            <div class="divider"></div>
+            <div class="stat"><div class="stat-val">${remaining}</div><div class="stat-label">remaining</div></div>
+            <div class="divider"></div>
+            <div class="stat"><div class="stat-val">${Math.round(pct*100)}%</div><div class="stat-label">complete</div></div>
+          </div>
+          <div class="message">${getMessage(day)}</div>
+          <button class="reset-btn" id="reset-btn">reset date</button>
+        </div>`;
+
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        const arc = document.getElementById('ring-arc');
+        if (arc) arc.style.strokeDashoffset = offset;
+      }));
+
+      document.getElementById('reset-btn').onclick = () => { clearStart(); renderSetup(); rescale(); };
+      attachThemeBtn();
+    }
+
+    const scaler = document.getElementById('scaler');
+    function rescale() {
+      scaler.style.transform = 'scale(1)';
+      const scaleX = window.innerWidth  / scaler.offsetWidth;
+      const scaleY = window.innerHeight / scaler.offsetHeight;
+      scaler.style.transform = `scale(${Math.min(scaleX, scaleY) * 0.9})`;
+    }
+
+    window.addEventListener('resize', rescale);
+    document.fonts.ready.then(rescale);
+
+    applyTheme(getTheme());
+    const saved = getStart();
+    if (saved) renderMain(saved);
+    else renderSetup();
+  </script>
+</body>
+</html>
